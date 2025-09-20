@@ -11,8 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.example.learning.dao.RepositoryFacade;
+import com.example.learning.dto.GenericResponse;
 import com.example.learning.dto.folder.response.FolderDTO;
 import com.example.learning.dto.user.requests.CreateUserRequest;
+import com.example.learning.dto.user.requests.UpdatePasswordRequest;
 import com.example.learning.dto.user.requests.UpdateUserRequest;
 import com.example.learning.dto.user.response.UserFolderList;
 import com.example.learning.dto.user.response.UserDTO;
@@ -21,7 +23,7 @@ import com.example.learning.entity.Folder;
 import com.example.learning.entity.User;
 import com.example.learning.exception.UserException;
 import com.example.learning.infra.BloomFilterService;
-import com.example.learning.utility.GenericUtil;
+import com.example.learning.utility.SecurityUtil;
 import com.example.learning.utility.StringUtils;
 
 @Service
@@ -41,22 +43,23 @@ public class UserService {
 			User user = new User();
 			user.setEmail(createUserRequest.getEmail());
 			user.setUserName(createUserRequest.getUserName());
+			String hashedPassword = SecurityUtil.generatePasswordHash(createUserRequest.getPassword());
+			user.setPassword(hashedPassword);
 			if (bloomFilterService.isContains(user.getUserName())) {
 				return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("User Name already taken.");
 			}
 			bloomFilterService.addUserNameToList(user.getUserName());
 			repositoryFacade.saveUser(user);
 			return ResponseEntity
-					.ok(GenericUtil.generateGenericResponse(true, "User has been created Successfully!!!"));
+					.ok(new GenericResponse(true, "User has been created Successfully!!!"));
 		} catch (Exception e) {
 			logger.error("Error in adding the user {} for request {}", createUserRequest.toString());
 			throw new UserException("Unable to create user!!! Please try later.");
 		}
 	}
 
-	public ResponseEntity<?> updateUser(UpdateUserRequest updateUserRequest) {
+	public ResponseEntity<?> updateUser(Long id, UpdateUserRequest updateUserRequest) {
 		try {
-			Long id = updateUserRequest.getUserId();
 			User user = repositoryFacade.getUser(id);
 			if (user == null) {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Unable to find the user!!!");
@@ -76,7 +79,7 @@ public class UserService {
 			List<Long> folderIds = updateUserRequest.getFolderIds();
 			if (folderIds != null && folderIds.size() > 0) {
 				for (Long folderId : folderIds) {
-					Folder folder = repositoryFacade.getFolder(folderId);
+					Folder folder = repositoryFacade.getFolder(id, folderId);
 					if (folder == null) {
 						logger.debug("Unable to locate the file with folder {}", folderId);
 						continue;
@@ -99,7 +102,7 @@ public class UserService {
 			}
 			repositoryFacade.saveUser(user);
 			return ResponseEntity
-					.ok(GenericUtil.generateGenericResponse(true, "User has been updated Successfully!!!"));
+					.ok(new GenericResponse(true, "User has been updated Successfully!!!"));
 
 		} catch (Exception e) {
 			logger.error("Error in updating the user {} for request {}", updateUserRequest.toString());
@@ -139,6 +142,43 @@ public class UserService {
 			logger.error("Error in getting folder mapping of the user {} for request {}", userId);
 			throw new UserException("Unable to get folders of the user!!! Please try later.");
 		}
+	}
+
+	public ResponseEntity<?> updateUserPassword(UpdatePasswordRequest updatePasswordRequest) {
+		try {
+			String userName = updatePasswordRequest.getUserName();
+			String password = updatePasswordRequest.getOldPassword();
+			String newPassword = updatePasswordRequest.getNewPassword();
+
+			User user = getUserByUserNameAndPassword(userName, password);
+
+			if (user == null) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+						.body((new GenericResponse(false, "Wrong user name or password entred!!!")));
+			}
+			user.setPassword(SecurityUtil.generatePasswordHash(newPassword));
+			repositoryFacade.saveUser(user);
+			// need to invalidate existing session while doing security integration
+		} catch (Exception e) {
+			logger.error("Error in update password method {}", e.getMessage());
+		}
+		return ResponseEntity.status(HttpStatus.OK).body(new GenericResponse(true, "Password Has been updated Successfully!!!"));
+
+	}
+
+	public User getUserByUserNameAndPassword(String userName, String password) {
+		User user = repositoryFacade.getUser(userName);
+		return isAuthenticatedUser(user, password);
+	}
+
+	public User getUserByEmailAndPassword(String email, String password) {
+		User user = repositoryFacade.getUserByEmail(email);
+		return isAuthenticatedUser(user, password);
+
+	}
+
+	private User isAuthenticatedUser(User user, String password) {
+		return SecurityUtil.isSamePassword(password, user.getPassword()) ? user : null;
 	}
 
 }

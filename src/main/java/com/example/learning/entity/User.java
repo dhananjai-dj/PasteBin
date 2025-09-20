@@ -28,6 +28,7 @@ public class User implements Serializable {
 	private String email;
 	@Column(unique = true, nullable = false)
 	private String userName;
+	private String password;
 
 	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
 	List<File> files = new ArrayList<>();

@@ -12,4 +12,8 @@ import com.example.learning.entity.User;
 public interface UserRepository extends JpaRepository<User, Long> {
 	@Query("SELECT u.userName FROM User u")
 	List<String> getAllUserNames();
+
+	User getByUserName(String userName);
+
+	User getByEmail(String email);
 }

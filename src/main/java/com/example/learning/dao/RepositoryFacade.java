@@ -18,7 +18,7 @@ public class RepositoryFacade {
 	private final UserRepository userRepository;
 	private final FolderRepository folderRepository;
 	private final FileRepsoitory fileRepsoitory;
-	
+
 	private final CacheService cacheService;
 
 	public RepositoryFacade(UserRepository userRepository, FolderRepository folderRepository,
@@ -56,17 +56,17 @@ public class RepositoryFacade {
 		fileRepsoitory.delete(file);
 		cacheService.removeFile(file.getId());
 	}
-	
-	public FolderDTO getFolderDTO(Long folderId) {
+
+	public FolderDTO getFolderDTO(Long userId, Long folderId) {
 		FolderDTO folderDTO = cacheService.getFolder(folderId);
-		if(folderDTO == null) {
-			folderDTO = FolderDTO.mapper(getFolder(folderId));
+		if (folderDTO == null) {
+			folderDTO = FolderDTO.mapper(getFolder(userId,folderId));
 		}
 		return folderDTO;
 	}
 
-	public Folder getFolder(Long folderId) {
-		Optional<Folder> optionalFolder = folderRepository.findById(folderId);
+	public Folder getFolder(Long userId, Long folderId) {
+		Optional<Folder> optionalFolder = folderRepository.findByUser_IdAndId(userId, folderId);
 		Folder folder = optionalFolder.orElse(null);
 		cacheService.reloadFolderCache(folder);
 		return folder;
@@ -87,20 +87,25 @@ public class RepositoryFacade {
 		cacheService.reloadUserCache(UserDTO.mapper(user));
 	}
 
+	public User getUser(String userName) {
+		return userRepository.getByUserName(userName);
+	}
+
 	public User getUser(Long userId) {
-		User user = userRepository.findById(userId).orElse(null);
-		return user;
+		return userRepository.findById(userId).orElse(null);
+	}
+
+	public User getUserByEmail(String email) {
+		return userRepository.getByEmail(email);
 	}
 
 	public UserDTO getUserDTO(Long userId) {
 		UserDTO userDTO = cacheService.getUserDTO(userId);
-		if(userDTO == null) {
+		if (userDTO == null) {
 			userDTO = UserDTO.mapper(getUser(userId));
 			cacheService.reloadUserCache(userDTO);
 		}
 		return userDTO;
 	}
-
-	
 
 }

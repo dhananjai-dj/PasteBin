@@ -37,7 +37,6 @@ public class BloomFilterService {
 			bloomFilter.put(userName.toLowerCase());
 		}
 	}
-	
 
 	public boolean isContains(String userName) {
 		return bloomFilter.mightContain(userName.toLowerCase());

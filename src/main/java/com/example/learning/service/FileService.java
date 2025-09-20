@@ -2,6 +2,7 @@ package com.example.learning.service;
 
 import java.net.URI;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.example.learning.dao.RepositoryFacade;
+import com.example.learning.dto.GenericResponse;
 import com.example.learning.dto.file.requests.SecureFileRequest;
 import com.example.learning.dto.file.requests.UpdateFileRequest;
 import com.example.learning.dto.file.requests.UploadFileRequest;
@@ -21,9 +23,8 @@ import com.example.learning.entity.Folder;
 import com.example.learning.entity.User;
 import com.example.learning.exception.FileException;
 import com.example.learning.infra.CacheFactory;
-import com.example.learning.utility.GenericUtil;
+import com.example.learning.utility.SecurityUtil;
 import com.example.learning.utility.StringUtils;
-import com.example.learning.utility.TimeUtils;
 
 @Service
 public class FileService {
@@ -31,11 +32,10 @@ public class FileService {
 	private final Logger logger = LoggerFactory.getLogger(FileService.class);
 
 	private final RepositoryFacade repositoryFacade;
-	
 
 	public FileService(RepositoryFacade repositoryFacade, CacheFactory cacheFactory) {
 		this.repositoryFacade = repositoryFacade;
-		
+
 	}
 
 	public ResponseEntity<?> addFile(UploadFileRequest uploadFileRequest) {
@@ -49,12 +49,12 @@ public class FileService {
 			file.setEndpoint(UUID.randomUUID());
 			if (file.getIsLocked()) {
 				String password = uploadFileRequest.getPassword();
-				file.setPasswordHash(GenericUtil.generatePasswordHash(password == null ? "" : password));
+				file.setPasswordHash(SecurityUtil.generatePasswordHash(password == null ? "" : password));
 			}
 
 			int burnTime = uploadFileRequest.getBurnTime();
 			if (burnTime > 0) {
-				Timestamp expiryTime = TimeUtils.addMinutesToTime(burnTime);
+				Timestamp expiryTime = addMinutesToTime(burnTime);
 				file.setExpirationTime(expiryTime);
 			}
 
@@ -64,7 +64,7 @@ public class FileService {
 					+ StringUtils.LINK + file.getEndpoint();
 			URI uri = URI.create(StringUtils.LINK + file.getEndpoint());
 
-			return ResponseEntity.created(uri).body(GenericUtil.generateGenericResponse(true, message));
+			return ResponseEntity.created(uri).body(new GenericResponse(true, message));
 		} catch (Exception e) {
 			logger.error("Error in add File {} for request", e.getMessage(), uploadFileRequest.toString());
 			throw new FileException("Unable to create the file!!! Please try again later.");
@@ -82,17 +82,9 @@ public class FileService {
 				file.setData(updateFileRequest.getData());
 				repositoryFacade.saveFile(file);
 			}
-			Long folderId = updateFileRequest.getFolderId();
-			if (folderId > 0) {
-				Folder folder = repositoryFacade.getFolder(folderId);
-				if (folder != null) {
-					folder.getFiles().add(file);
-					repositoryFacade.saveFolder(folder);
-				}
-			}
 			String message = "File has been updated successfully. Please use this link to access the file"
 					+ StringUtils.LINK + file.getEndpoint();
-			return ResponseEntity.ok(GenericUtil.generateGenericResponse(true, message));
+			return ResponseEntity.ok(new GenericResponse(true, message));
 		} catch (Exception e) {
 			logger.error("Error in update File {} for request {}", e.getMessage(), updateFileRequest.toString());
 			throw new FileException("Unable to update the file!!!");
@@ -127,9 +119,9 @@ public class FileService {
 			if (file == null) {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Unable to locate the file!!!");
 			}
-			if (!GenericUtil.isSamePassword(password, file.getPasswordHash())) {
+			if (!SecurityUtil.isSamePassword(password, file.getPasswordHash())) {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-						.body((GenericUtil.generateGenericResponse(false, "Wrong Password entred!!!")));
+						.body((new GenericResponse(false, "Wrong Password entred!!!")));
 			}
 			FileResponse fileResponse = fileResposneMapper(file);
 			if (file.getIsOnceView()) {
@@ -149,7 +141,7 @@ public class FileService {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Unable to delete the file!!!");
 			}
 			repositoryFacade.deleteFile(file);
-			return ResponseEntity.ok(GenericUtil.generateGenericResponse(true, "File has been deleted success fully"));
+			return ResponseEntity.ok(new GenericResponse(true, "File has been deleted success fully"));
 		} catch (Exception e) {
 			logger.error("Error in delete the file {} for request {} ", e.getMessage(), fileId);
 			throw new FileException("Unable to delete the file!!!");
@@ -176,5 +168,11 @@ public class FileService {
 		}
 		return fileResponse;
 	}
+	
+	private  Timestamp addMinutesToTime(int minutes) {
+		LocalDateTime futureTime = LocalDateTime.now().plusMinutes(minutes);
+		return Timestamp.valueOf(futureTime);
+	}
+
 
 }
