@@ -42,7 +42,7 @@ public class SecurityUtil {
 		customPrincipal.setIsValid(false);
 		try {
 			Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
-			if (claims.getExpiration()!= null && claims.getExpiration().after(new Date())) {
+			if (claims.getExpiration() != null && claims.getExpiration().after(new Date())) {
 				customPrincipal.setUserName(claims.getSubject());
 				customPrincipal.setUserId(claims.get("userId", Long.class));
 				customPrincipal.setIsValid(true);

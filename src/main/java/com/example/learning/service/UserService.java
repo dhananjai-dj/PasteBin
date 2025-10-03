@@ -165,6 +165,11 @@ public class UserService {
 		return ResponseEntity.status(HttpStatus.OK).body(new GenericResponse(true, "Password Has been updated Successfully!!!"));
 
 	}
+	
+	
+	public User getUserByEmail(String email) {
+		return repositoryFacade.getUserByEmail(email);
+	}
 
 	public User getUserByUserNameAndPassword(String userName, String password) {
 		User user = repositoryFacade.getUser(userName);

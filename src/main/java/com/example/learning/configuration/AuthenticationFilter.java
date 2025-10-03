@@ -23,8 +23,14 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
+
+		String path = request.getRequestURI();
+		if (path.startsWith("/no-auth/") || path.startsWith("/file/") || path.startsWith("/oauth2/")) {
+			filterChain.doFilter(request, response);
+			return;
+		}
 		String authorization = request.getHeader("Authorization");
-		if (StringUtils.isValidString(authorization) && !authorization.startsWith("Bearer ")) {
+		if (!StringUtils.isValidString(authorization) || !authorization.startsWith("Bearer ")) {
 			filterChain.doFilter(request, response);
 			return;
 		}

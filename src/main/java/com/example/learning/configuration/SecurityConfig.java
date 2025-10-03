@@ -19,11 +19,11 @@ public class SecurityConfig {
 
 	@Bean
 	SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http.csrf(csrf -> csrf.disable()) // Disable CSRF for API calls
-				.authorizeHttpRequests(auth -> auth.requestMatchers("/no-auth/**", "/file/**").permitAll() // public end points
-						.anyRequest().authenticated() // everything else requires JWT
-				).addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class); // register JWT filter
-																										
+		http.csrf(csrf -> csrf.disable())
+				.authorizeHttpRequests(
+						auth -> auth.requestMatchers("/open/**", "/file/**").permitAll().anyRequest().authenticated())
+				.oauth2Login(oauth -> oauth.defaultSuccessUrl("/no-auth/oauth-token", true))
+				.addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
 	}

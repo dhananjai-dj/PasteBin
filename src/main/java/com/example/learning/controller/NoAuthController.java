@@ -1,6 +1,8 @@
 package com.example.learning.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,14 +20,15 @@ import com.example.learning.utility.StringUtils;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/no-auth")
+@RequestMapping("/open")
 public class NoAuthController {
 
 	private final BloomFilterService bloomFilterService;
 	private final SecurityService securityService;
 	private final UserService userService;
 
-	public NoAuthController(BloomFilterService bloomFilterService, SecurityService securityService, UserService userService) {
+	public NoAuthController(BloomFilterService bloomFilterService, SecurityService securityService,
+			UserService userService) {
 		this.bloomFilterService = bloomFilterService;
 		this.securityService = securityService;
 		this.userService = userService;
@@ -36,12 +39,17 @@ public class NoAuthController {
 		return StringUtils.isValidString(userName) && !bloomFilterService.isContains(userName);
 	}
 
-	@PostMapping("/token")
+	@PostMapping("/jwt-token")
 	public ResponseEntity<?> getJwtToken(@Valid @RequestBody AuthRequest authRequest) {
 		return securityService.getJwtToken(authRequest);
 	}
-	
-	@PostMapping("/add")
+
+	@GetMapping("/oauth-token")
+	public ResponseEntity<?> getJwtToken(@AuthenticationPrincipal OAuth2User oAuth2User) {
+		return securityService.getJwtTokenForOauth(oAuth2User);
+	}
+
+	@PostMapping("/add-user")
 	public ResponseEntity<?> createUser(@Valid @RequestBody CreateUserRequest createUserRequest) {
 		return userService.createUser(createUserRequest);
 	}

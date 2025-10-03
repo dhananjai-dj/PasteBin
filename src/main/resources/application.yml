@@ -1,4 +1,3 @@
-
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/pastebin
@@ -16,11 +15,21 @@ spring:
 
   application:
     name: pasteBin
-  security:
-    user:
-      name: dhananjai
-      password: Ammu123*
 
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 1046056151503-j07uk4lqcrhthul6tpso2rp44i456eje.apps.googleusercontent.com
+            client-secret: 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
+            scope: openid, profile, email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
 
 server:
   port: 8080
