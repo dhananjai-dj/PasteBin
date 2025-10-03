@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: postgresql://dhananjai:PUAs1tvHQEua5X9wcHwodnwkm4R4T1or@dpg-d3fmik7fte5s73d34ai0-a.singapore-postgres.render.com/pastebin_bwdm
+    url: jdbc:postgresql://dhananjai:PUAs1tvHQEua5X9wcHwodnwkm4R4T1or@dpg-d3fmik7fte5s73d34ai0-a.singapore-postgres.render.com/pastebin_bwdm
     username: dhananjai
     password: PUAs1tvHQEua5X9wcHwodnwkm4R4T1or
     driver-class-name: org.postgresql.Driver
