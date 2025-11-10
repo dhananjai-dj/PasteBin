@@ -25,7 +25,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 			throws ServletException, IOException {
 
 		String path = request.getRequestURI();
-		if (path.startsWith("/no-auth/") || path.startsWith("/file/") || path.startsWith("/oauth2/")) {
+		if (path.startsWith("/open/") || path.startsWith("/file/") || path.startsWith("/oauth2/")) {
 			filterChain.doFilter(request, response);
 			return;
 		}
